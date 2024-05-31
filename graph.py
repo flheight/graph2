@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.cluster import KMeans, SpectralClustering
-from scipy.spatial.distance import pdist, squareform
-from scipy.stats import trim_mean
+from sklearn.metrics import pairwise_distances
 
 class Graph:
     def __init__(self, n_classes):
@@ -10,17 +9,14 @@ class Graph:
     def fit(self, X, n_nodes):
         centers = KMeans(n_clusters=n_nodes).fit(X).cluster_centers_
 
-        k_neigbors=n_nodes // self.n_classes
+        k_neighbors = n_nodes // self.n_classes
 
-        dist = squareform(pdist(centers))
+        dist = pairwise_distances(centers)
         np.fill_diagonal(dist, np.inf)
-        sigma = np.sort(dist, axis=0)[:k_neigbors]
-        sigma = np.std(sigma, axis=0) * np.power(.75 * k_neigbors, -.2)
-        gamma = .5 / (sigma[np.newaxis, :] * sigma[:, np.newaxis])
+        sorted_dist = np.sort(dist, axis=0)[:k_neighbors]
+        sigma = np.max(np.diff(sorted_dist, axis=0), axis=0)
 
-        print(gamma.mean())
-
-        affinity_matrix = np.exp(-dist**2 * gamma)
+        affinity_matrix = np.exp(-dist**2  / (sigma[np.newaxis, :] * sigma[:, np.newaxis]))
 
         labels = SpectralClustering(n_clusters=self.n_classes, affinity='precomputed').fit_predict(affinity_matrix)
 
