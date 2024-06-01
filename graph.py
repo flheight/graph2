@@ -9,16 +9,14 @@ class Graph:
     def fit(self, X, n_nodes):
         centers = KMeans(n_clusters=n_nodes).fit(X).cluster_centers_
 
-        k_neighbors = n_nodes // self.n_classes
-
         dist = pairwise_distances(centers)
         np.fill_diagonal(dist, np.inf)
-        sorted_dist = np.sort(dist, axis=0)[:k_neighbors]
-        sigma = np.max(np.diff(sorted_dist, axis=0), axis=0).mean()
+        min_dist = np.min(dist, axis=1)
 
-        affinity_matrix = np.exp(-dist**2  / sigma**2)
-
-        labels = SpectralClustering(n_clusters=self.n_classes, affinity='precomputed').fit_predict(affinity_matrix)
+        affinity = np.exp(dist / -np.std(min_dist))
+        affinity = affinity + affinity.T - affinity * affinity.T
+        
+        labels = SpectralClustering(n_clusters=self.n_classes, affinity='precomputed').fit_predict(affinity)
 
         self.clusters = [centers[labels == i] for i in range(self.n_classes)]
 
