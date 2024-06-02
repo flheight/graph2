@@ -11,10 +11,8 @@ class Graph:
 
         dist = pairwise_distances(centers)
         np.fill_diagonal(dist, np.inf)
-        min_dist = np.min(dist, axis=1)
 
-        affinity = np.exp(dist / -np.std(min_dist))
-        affinity = affinity + affinity.T - affinity * affinity.T
+        affinity = np.exp(dist / -np.std(dist.min(axis=1)))
         
         labels = SpectralClustering(n_clusters=self.n_classes, affinity='precomputed').fit_predict(affinity)
 
