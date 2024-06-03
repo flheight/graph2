@@ -6,19 +6,14 @@ class Graph:
     def __init__(self, n_classes):
         self.n_classes = n_classes
 
-    def fit(self, X):
-        max_iter = int(np.log2(X.shape[0]))
-        kmeans = [KMeans(n_clusters=2**i).fit(X) for i in range(max_iter)]
-        bic = [kmeans[i].inertia_ + .5 * (2**i + 1) * np.log(X.shape[0]) for i in range(max_iter)]
-
-        best_kmeans = kmeans[np.minimum(np.argmin(bic) + 1, max_iter - 1)]
-        centers = best_kmeans.cluster_centers_
+    def fit(self, X, n_nodes):
+        centers = KMeans(n_clusters=n_nodes).fit(X).cluster_centers_
 
         dist = pairwise_distances(centers, metric='sqeuclidean')
         np.fill_diagonal(dist, np.inf)
 
         affinity = np.exp(dist / -np.std(dist.min(axis=1)))
-        
+
         labels = SpectralClustering(n_clusters=self.n_classes, affinity='precomputed').fit_predict(affinity)
 
         self.clusters = [centers[labels == i] for i in range(self.n_classes)]
